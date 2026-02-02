@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %} Vérification OTP - Walletis {% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+  <div class="max-w-md w-full mx-auto">
+    
+    <!-- Carte principale -->
+    <div class="bg-white py-10 px-8 shadow-xl rounded-2xl">
+      
+      <!-- En-tête -->
+      <div class="text-center mb-8">
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+          <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <h2 class="text-3xl font-extrabold text-gray-900">Vérification</h2>
+        <p class="mt-2 text-gray-600">
+          Entrez le code à 6 chiffres envoyé à votre adresse email
+        </p>
+      </div>
+
+      <!-- Formulaire -->
+      <form method="post" action="{% url 'otp' %}" id="otpForm" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Champ caché pour récupérer la valeur complète -->
+        <input type="hidden" name="otp" id="hiddenOtp" required>
+
+        <!-- Grille des inputs OTP -->
+        <div class="flex justify-between gap-2" id="otpContainer">
+          <!-- 6 inputs générés ici -->
+          <input type="text" maxlength="1" class="otp-input w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" pattern="\d*" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-input w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" pattern="\d*" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-input w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" pattern="\d*" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-input w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" pattern="\d*" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-input w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" pattern="\d*" inputmode="numeric">
+          <input type="text" maxlength="1" class="otp-input w-12 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all" pattern="\d*" inputmode="numeric">
+        </div>
+
+        <!-- Bouton Submit -->
+        <button type="submit" 
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-[1.02]">
+          Vérifier le code
+        </button>
+
+        <!-- Gestion des erreurs (Django) -->
+        {% if form.errors %}
+            <div class="text-center text-sm text-red-600 mt-2">
+                {% for error in form.otp.errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+      </form>
+
+      <!-- Lien Renvoyer -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-500">
+          Vous n'avez pas reçu le code ? 
+          <a href="{% url 'otp' %}" class="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+            Renvoyer
+          </a>
+        </p>
+        
+        <div class="mt-4">
+             <a href="{% url 'login' %}" class="text-sm text-gray-400 hover:text-gray-600">
+                &larr; Retour à la connexion
+             </a>
+             <a href="{% url 'home' %}" class="text-sm text-gray-400 hover:text-gray-600">
+                &larr; Retour à la page d'accueil
+             </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const inputs = document.querySelectorAll('.otp-input');
+    const hiddenInput = document.getElementById('hiddenOtp');
+    const form = document.getElementById('otpForm');
+
+    inputs.forEach((input, index) => {
+      // Gestion de la saisie
+      input.addEventListener('input', (e) => {
+        const value = e.target.value;
+
+        // Si l'utilisateur entre autre chose qu'un chiffre, on efface
+        if (!/^\d*$/.test(value)) {
+          e.target.value = '';
+          return;
+        }
+
+        // Déplacer le focus vers le champ suivant
+        if (value.length === 1 && index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        }
+
+        updateHiddenInput();
+      });
+
+      // Gestion des touches spéciales (Backspace, Touches fléchées)
+      input.addEventListener('keydown', (e) => {
+        // Si on appuie sur Backspace et que le champ est vide, on va au précédent
+        if (e.key === 'Backspace' && !e.target.value && index > 0) {
+          inputs[index - 1].focus();
+        }
+        // Navigation au clavier (Flèches)
+        else if (e.key === 'ArrowLeft' && index > 0) {
+          inputs[index - 1].focus();
+        }
+        else if (e.key === 'ArrowRight' && index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        }
+      });
+
+      // Gestion du copier-coller
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text').slice(0, inputs.length).split('');
+
+        if (pasteData.every(val => /^\d$/.test(val))) {
+          pasteData.forEach((digit, i) => {
+            if (inputs[i]) {
+              inputs[i].value = digit;
+            }
+          });
+          // Focus sur le dernier champ rempli ou le suivant
+          const nextIndex = Math.min(pasteData.length, inputs.length - 1);
+          inputs[nextIndex].focus();
+          updateHiddenInput();
+        }
+      });
+    });
+
+    // Fonction pour assembler le code complet dans le champ caché
+    function updateHiddenInput() {
+      const otpValue = Array.from(inputs)
+        .map(input => input.value)
+        .join('');
+      hiddenInput.value = otpValue;
+    }
+
+    // Focus sur le premier champ au chargement
+    inputs[0].focus();
+  });
+</script>
+{% endblock %}

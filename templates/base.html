@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Walletis{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <!-- Navbar commune -->
+    <nav class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'home'%}" class="text-xl font-bold text-gray-800">
+                Walletis
+            </a>
+
+            <div class="space-x-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="text-gray-700 hover:text-blue-600">Continuer</a>
+                    <a href="{% url 'logout' %}" class="text-gray-700 hover:text-red-600">Déconnexion</a>
+                   
+                   
+                {% else %}
+                     <a href="{% url 'login' %}" class="text-gray-700 hover:text-blue-600">Connexion</a>
+                    <a href="{% url 'register' %}" class="text-gray-700 hover:text-blue-600">Inscription</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenu principal -->
+    <main class="container mx-auto py-8">
+        {% block content %}
+        <!-- Contenu spécifique de chaque page -->
+        {% endblock %}
+    </main>
+
+    
+
+</body>
+</html>
