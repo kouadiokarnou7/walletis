@@ -1,0 +1,132 @@
+{% extends 'layout.html' %}
+
+{% block title %} Walletis - Mon Profil {% endblock %}
+
+{% block content %}
+
+<div class="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+    
+    <!-- Titre de la page -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-extrabold text-gray-900">Mon Profil</h1>
+      <p class="text-gray-500 mt-1">Gérez vos informations personnelles et la sécurité de votre compte.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Colonne Gauche : Info Visuelle (1/3) -->
+      <div class="space-y-6">
+        <!-- Carte Avatar -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
+          <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg mb-4">
+            {{ user.nom_complet|slice:":2"|upper }}
+          </div>
+          <h2 class="text-xl font-bold text-gray-900">{{ user.nom_complet }}</h2>
+          <p class="text-gray-500 text-sm mb-4">{{ user.email }}</p>
+          
+          <div class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-100">
+            Membre depuis le : {{ user.date_joined|date:"M Y" }}
+          </div>
+        </div>
+
+        <!-- Menu Rapide -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+          <nav class="space-y-1">
+            <a href="#" class="flex items-center px-4 py-3 text-sm font-medium bg-indigo-50 text-indigo-700 rounded-xl">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              Informations générales
+            </a>
+            <a href="#" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              Sécurité
+            </a>
+            <a href="#" class="flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              Connexions
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Colonne Droite : Formulaire (2/3) -->
+      <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Formulaire Édition -->
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+          <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-gray-900">Modifier mes informations</h3>
+          </div>
+
+          <form action="#" method="post">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 gap-6">
+              <!-- Identifiant (Lecture seule) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Identifiant Unique</label>
+                <div class="flex">
+                  <input type="text" value="{{ user.identifiant }}" disabled 
+                         class="w-full rounded-l-lg border-gray-200 bg-gray-50 text-gray-500 px-4 py-2.5 focus:ring-0 cursor-not-allowed">
+                  <div class="inline-flex items-center px-4 rounded-r-lg border border-l-0 border-gray-200 bg-gray-50 text-gray-500 text-sm">
+                    Non modifiable
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nom Complet -->
+              <div>
+                <label for="nom_complet" class="block text-sm font-medium text-gray-700 mb-1">Nom complet</label>
+                <input type="text" name="nom_complet" id="nom_complet" value="{{ user.nom_complet }}"
+                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 border">
+              </div>
+
+              <!-- Email -->
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Adresse email</label>
+                <input type="email" name="email" id="email" value="{{ user.email }}"
+                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2.5 border">
+                <p class="mt-1 text-xs text-gray-500">Nous enverrons un email de confirmation si vous changez cette adresse.</p>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+              <button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-sm">
+                Enregistrer les modifications
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Sécurité -->
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">Mot de passe</h3>
+          <p class="text-sm text-gray-600 mb-4">Assurez-vous que votre compte utilise un mot de passe long et aléatoire pour rester en sécurité.</p>
+          <!--  "{ url 'password_change' %}"-->
+          <a href="#" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition">
+            <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            Changer mon mot de passe
+          </a>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-red-100">
+          <h3 class="text-lg font-bold text-red-600 mb-2">Zone de danger</h3>
+          <p class="text-sm text-gray-500 mb-4">Une fois que vous avez supprimé votre compte, il n'y a pas moyen de revenir en arrière. Veuillez être certain.</p>
+          
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a href="{% url 'logout' %}" class="flex-1 text-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition">
+              Se déconnecter
+            </a>
+            <button class="flex-1 bg-red-50 text-red-700 hover:bg-red-100 px-4 py-2 border border-transparent rounded-lg text-sm font-semibold transition">
+              Supprimer mon compte
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
