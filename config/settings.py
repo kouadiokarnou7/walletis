@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Sécurité
 SECRET_KEY = 'django-insecure-04zj%mb4&8!$pdy48=j(9asnbts*6^z-s#flp0j8hx51yt@6_0'
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 # Applications
 INSTALLED_APPS = [
@@ -38,7 +38,7 @@ ROOT_URLCONF = 'config.urls'
 
 # Templates
 TEMPLATES = [
-    {
+    { 
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
@@ -58,13 +58,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'walletis',
-        'USER': 'postgres',
-        'PASSWORD': 'abc123',
-        'HOST': 'localhost',
+        'NAME': 'postgres',  # le nom de ta DB RDS
+        'USER': 'postgres',  # ton user RDS
+        'PASSWORD': 'david123456',  # le mot de passe RDS
+        'HOST': 'database-1.che2a2euivri.eu-west-3.rds.amazonaws.com',
         'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',  # sécurise la connexion
+        },
     }
 }
+
 
 
 # Validation des mots de passe
