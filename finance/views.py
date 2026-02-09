@@ -272,3 +272,51 @@ def enregistrer_depense(request):
         return redirect('dashboard')
 
     return redirect('dashboard')    
+
+
+
+@login_required
+def compte_list(request):
+    q = request.GET.get('q', '').strip()
+
+    comptes = Compte.objects.filter(compte_user=request.user)
+
+    if q:
+        comptes = comptes.filter(nom_compte__icontains=q)
+
+    context = {
+        'comptes': comptes,
+        'query': q,
+    }
+
+    return render(request, 'pages/compte.html', context)
+
+@login_required
+def compte_delete(request, compte_id):
+    compte = get_object_or_404(
+        Compte,
+        id=compte_id,
+        compte_user=request.user
+    )
+
+    if request.method == "POST":
+        compte.delete()
+        return redirect('compte_list')
+
+    return redirect('compte_list')
+
+
+@login_required
+def compte_update(request, compte_id):
+    compte = get_object_or_404(Compte, id=compte_id, compte_user=request.user)
+    if request.method == "POST":
+        compte.nom_compte = request.POST.get('nom_compte')
+        compte.description = request.POST.get('description')
+        compte.save()
+        return redirect('compte_list') 
+
+
+
+@login_required
+def transaction_page(request):
+    return render(request,'pages/transaction.html')

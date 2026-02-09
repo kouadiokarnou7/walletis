@@ -1,7 +1,234 @@
 {% extends "layout.html" %}
-{% block title %} Walletis - Compte {% endblock %}
+{% block title %}Walletis - Comptes{% endblock %}
+
 {% block content %}
-<div class="container mx-auto py-8">
-    <h1 class="text-2xl font-bold text-gray-800">Compte</h1>
+<div class="container mx-auto py-8 max-w-7xl">
+
+    <!-- Titre et Intro -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-indigo-600 tracking-tight">
+            Gestion des comptes
+        </h1>
+        <p class="text-gray-500 mt-2 font-medium">Consultez et organisez tous vos portefeuilles en un seul lieu.</p>
+    </div>
+
+    <!-- Recherche + Création -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
+        <!-- Barre de recherche stylisée -->
+        <div class="relative w-full md:w-1/3 group">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <span class="text-gray-400 group-focus-within:text-indigo-500 transition-colors">🔍</span>
+            </div>
+            <form method="get" class="w-full">
+                <input type="text"
+                       name="q"
+                       value="{{ query }}"
+                       placeholder="Rechercher un compte..."
+                       class="w-full bg-gray-50/50 backdrop-blur-sm border-2 border-gray-100 rounded-2xl pl-11 pr-4 py-3.5 text-gray-700 placeholder-gray-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all duration-300 shadow-sm">
+            </form>
+        </div>
+
+        <!-- Bouton Créer -->
+        <button onclick="openModal('accountModal')" 
+                class="group relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50 hover:-translate-y-0.5 transition-all duration-300">
+            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            <span class="relative flex items-center gap-2">
+                <span class="text-lg">+</span> Créer un compte
+            </span>
+        </button>
+    </div>
+
+    <!-- Grille des Comptes -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for compte in comptes %}
+        <div class="group relative bg-white/60 backdrop-blur-xl border border-white/60 rounded-3xl p-8 shadow-xl shadow-indigo-900/5 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300">
+            
+            <!-- Cercle décoratif au fond -->
+            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-50 rounded-full blur-2xl group-hover:bg-indigo-100 transition-colors duration-500"></div>
+
+            <div class="relative z-10">
+                <!-- En-tête carte -->
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-indigo-600 text-xl font-bold shadow-sm border border-white">
+                        {{ compte.nom_compte|upper|slice:":1" }}
+                    </div>
+                    
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        Actif
+                    </span>
+                </div>
+
+                <!-- Contenu -->
+                <h3 class="text-xl font-black text-gray-900 mb-1 truncate">
+                    {{ compte.nom_compte }}
+                </h3>
+
+                <p class="text-sm text-gray-500 mb-6 h-5">
+                    {{ compte.description|default:"Aucune description" }}
+                </p>
+
+                <div class="flex items-baseline gap-1 mb-8">
+                    <span class="text-3xl font-black text-gray-800 tracking-tight">{{ compte.solde }}</span>
+                    <span class="text-sm font-bold text-gray-400">FCFA</span>
+                </div>
+
+                <div class="border-t border-gray-100 pt-6 flex justify-between items-center">
+                    
+                    <!-- Lien Transactions (Commenté dans votre code original, je laisse la structure propre) -->
+                    <!-- 
+                    <a href="{ #transaction_by_comptecompte.id }"
+                       class="text-indigo-600 text-sm font-bold hover:text-indigo-800 transition-colors">
+                        Voir les différentes transactions →
+                    </a>
+                    -->
+
+                    
+
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        
+                        <!-- Bouton Modifier -->
+                        <button type="button" 
+                                onclick="openModal('editModal-{{ compte.id }}')"
+                                class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-600 hover:scale-110 transition-all duration-200 flex items-center justify-center text-lg shadow-sm"
+                                title="Modifier">
+                            ✏️
+                        </button>
+
+                        <!-- Bouton Supprimer -->
+                        <form method="post"
+                              action="{% url 'compte_delete' compte.id %}"
+                              class="inline"
+                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement ce compte ?');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    title="Supprimer"
+                                    class="w-10 h-10 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white hover:scale-110 transition-all duration-200 flex items-center justify-center text-lg shadow-sm">
+                                🗑️
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODALE D'ÉDITION (Dynamique dans la boucle) -->
+        <div id="editModal-{{ compte.id }}" class="modal-overlay hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+            <div class="bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] max-w-md w-full overflow-hidden border border-white/40 transform transition-all duration-300 scale-95">
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
+                    <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700">Modifier le compte</h2>
+                    <button onclick="closeModal('editModal-{{ compte.id }}')" class="text-gray-400 hover:text-red-500 text-3xl font-bold transition transform hover:rotate-90">&times;</button>
+                </div>
+                
+                <form method="post" action="{% url 'compte_update' compte.id %}" class="p-8 space-y-6">
+                    {% csrf_token %}
+                    <div class="group">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nom du compte</label>
+                        <input type="text" name="nom_compte" value="{{ compte.nom_compte }}" required 
+                               class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all duration-300">
+                    </div>
+                    <div class="group">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description</label>
+                        <input type="text" name="description" value="{{ compte.description|default:'' }}" 
+                               class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all duration-300">
+                    </div>
+                    <div class="flex justify-between gap-4 pt-2">
+                        <button type="button" onclick="closeModal('editModal-{{ compte.id }}')" 
+                                class="flex-1 bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-200 transition active:scale-95">
+                            Annuler
+                        </button>
+                        <button type="submit" 
+                                class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 transition-all duration-200">
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- FIN MODALE ÉDITION -->
+
+        {% empty %}
+        <div class="col-span-full text-center py-20">
+            <div class="inline-block p-6 rounded-full bg-gray-50 mb-4 text-5xl">💸</div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Aucun compte trouvé</h3>
+            <p class="text-gray-500">Créez votre premier portefeuille pour commencer.</p>
+        </div>
+        {% endfor %}
+    </div>
 </div>
+
+<!-- MODALE DE CRÉATION -->
+<div id="accountModal" class="modal-overlay hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] max-w-md w-full overflow-hidden border border-white/40 transform transition-all duration-300 scale-95">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
+            <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 to-purple-700">Nouveau compte</h2>
+            <button onclick="closeModal('accountModal')" class="text-gray-400 hover:text-red-500 text-3xl font-bold transition transform hover:rotate-90">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'compte' %}" class="p-8 space-y-6">
+            {% csrf_token %}
+            <div class="group">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nom du compte</label>
+                <input type="text" name="nom_compte" required placeholder="Ex: Cash, Banque..." 
+                       class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all duration-300 placeholder:text-gray-400">
+            </div>
+            <div class="group">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description</label>
+                <input type="text" name="description" placeholder="Détails supplémentaires..." 
+                       class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-5 py-4 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all duration-300 placeholder:text-gray-400">
+            </div>
+            <div class="flex justify-between gap-4 pt-2">
+                <button type="button" onclick="closeModal('accountModal')" 
+                        class="flex-1 bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-200 transition active:scale-95">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 rounded-2xl hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 transition-all duration-200">
+                    Créer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Scripts pour gérer l'ouverture/fermeture avec animation
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('hidden');
+        // Petit délai pour activer l'animation CSS (opacité et échelle)
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            const content = modal.querySelector('div:not(.modal-overlay)'); // Cible la boîte intérieure
+            if(content) {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }
+        }, 10);
+        document.body.style.overflow = 'hidden'; // Bloque le scroll derrière
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.add('opacity-0');
+        const content = modal.querySelector('div:not(.modal-overlay)');
+        if(content) {
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300); // Doit correspondre à la durée de la transition CSS
+        document.body.style.overflow = 'auto';
+    }
+
+    // Fermer si on clique en dehors
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            closeModal(event.target.id);
+        }
+    }
+</script>
+
 {% endblock %}
