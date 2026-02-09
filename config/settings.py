@@ -58,14 +58,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',  # le nom de ta DB RDS
-        'USER': 'postgres',  # ton user RDS
-        'PASSWORD': 'david123456',  # le mot de passe RDS
-        'HOST': 'database-1.che2a2euivri.eu-west-3.rds.amazonaws.com',
+        'NAME': 'walletis',
+        'USER': 'postgres',
+        'PASSWORD': 'abc123',
+        'HOST': 'localhost',
         'PORT': '5432',
-        'OPTIONS': {
-            'sslmode': 'require',  # sécurise la connexion
-        },
     }
 }
 
