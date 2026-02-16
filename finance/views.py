@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import timedelta
 from .models import User, OTP,Compte,Transaction
+from django.db.models import Sum, F, Q
+from django.db.models.functions import TruncMonth
 from django.db import IntegrityError
 import random
 from decimal import Decimal
@@ -172,7 +174,7 @@ def dashboardpage(request):
 
     # afficher les transaction
         # Transactions liées aux comptes de l'utilisateur
-    transactions = Transaction.objects.filter(compte__in=comptes).order_by('-date')
+    transactions = Transaction.objects.filter(compte__in=comptes).order_by('-date')[:5]
 
     # Contexte pour le template
     context = {
@@ -272,3 +274,129 @@ def enregistrer_depense(request):
         return redirect('dashboard')
 
     return redirect('dashboard')    
+
+
+
+@login_required
+def compte_list(request):
+    q = request.GET.get('q', '').strip()
+
+    comptes = Compte.objects.filter(compte_user=request.user)
+
+    if q:
+        comptes = comptes.filter(nom_compte__icontains=q)
+
+    context = {
+        'comptes': comptes,
+        'query': q,
+    }
+
+    return render(request, 'pages/compte.html', context)
+
+@login_required
+def compte_delete(request, compte_id):
+    compte = get_object_or_404(
+        Compte,
+        id=compte_id,
+        compte_user=request.user
+    )
+
+    if request.method == "POST":
+        compte.delete()
+        return redirect('compte_list')
+
+    return redirect('compte_list')
+
+
+@login_required
+def compte_update(request, compte_id):
+    compte = get_object_or_404(Compte, id=compte_id, compte_user=request.user)
+    if request.method == "POST":
+        compte.nom_compte = request.POST.get('nom_compte')
+        compte.description = request.POST.get('description')
+        compte.save()
+        return redirect('compte_list') 
+
+
+@login_required
+def transaction_page(request):
+    comptes = Compte.objects.filter(compte_user=request.user)
+    total_solde = sum(c.solde for c in comptes)
+    compte_id = request.GET.get('compte')
+    search_query = request.GET.get('q')
+
+    # Toutes les transactions de tous les comptes de l'utilisateur
+    transactions = Transaction.objects.filter(compte__in=comptes)
+
+    # Filtrer par compte si sélectionné (optionnel)
+    if compte_id:
+        transactions = transactions.filter(compte_id=compte_id)
+    if search_query:
+        transactions = transactions.filter(description__icontains=search_query)
+
+    transactions = transactions.order_by('-date')
+
+    # Pour l'en-tête : compte sélectionné ou "Tous les comptes"
+    compte_actif = None
+    if compte_id:
+        try:
+            compte_actif = comptes.get(id=compte_id)
+        except Compte.DoesNotExist:
+            pass
+    solde = compte_actif.solde if compte_actif else total_solde
+
+    context = {
+        'transactions': transactions,
+        'comptes': comptes,
+        'compte_actif': compte_actif,
+        'solde': solde,
+        'total_solde': total_solde,
+        'selected_compte': compte_id,
+        'search_query': search_query,
+        'transactions_json': list(transactions.values('id', 'description', 'montant', 'date', 'type')),
+    }
+    return render(request, 'pages/transaction.html', context)
+
+#partie rapport
+
+@login_required
+def report_page(request):
+    comptes = Compte.objects.filter(compte_user=request.user)
+    transactions = Transaction.objects.filter(compte__in=comptes).order_by('-date')
+
+    # --- 1. Graphique Camembert : répartition des dépenses par compte (pas de champ categorie) ---
+    depenses = transactions.filter(type='DEPENSE')
+    by_compte = depenses.values('compte__nom_compte').annotate(total=Sum('montant')).order_by('-total')
+    labels_categories = [item['compte__nom_compte'] or 'Sans compte' for item in by_compte]
+    data_categories = [float(item['total']) for item in by_compte]
+
+    # --- 2. Graphique Barres : évolution mensuelle (revenus vs dépenses par type) ---
+    monthly_data = transactions.annotate(month=TruncMonth('date')).values('month').annotate(
+        income=Sum('montant', filter=Q(type='REVENU')),
+        expense=Sum('montant', filter=Q(type='DEPENSE'))
+    ).order_by('month')
+    labels_months = [item['month'].strftime('%b %Y') for item in monthly_data]
+    data_income = [float(item['income'] or 0) for item in monthly_data]
+    data_expense = [float(item['expense'] or 0) for item in monthly_data]
+
+    # --- 3. Totaux globaux ---
+    agg = transactions.aggregate(
+        total_revenu=Sum('montant', filter=Q(type='REVENU')),
+        total_depense=Sum('montant', filter=Q(type='DEPENSE'))
+    )
+    total_revenu = agg['total_revenu'] or 0
+    total_depense = agg['total_depense'] or 0
+    solde_net = total_revenu - total_depense
+
+    context = {
+        'labels_categories': labels_categories,
+        'data_categories': data_categories,
+        'labels_months': labels_months,
+        'data_income': data_income,
+        'data_expense': data_expense,
+        'total_revenu': total_revenu,
+        'total_depense': total_depense,
+        'solde_net': solde_net,
+        'transactions': transactions,
+    }
+    return render(request, 'pages/rapport.html', context)

@@ -13,11 +13,11 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <a href="#" class="flex items-center gap-2 bg-white border border-gray-300 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm">
+            <a href="{% url 'report_page' %}" class="flex items-center gap-2 bg-white border border-gray-300 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm">
                 <span>📊</span> Graphiques
             </a>
             <a href="#" class="flex items-center gap-2 bg-white border border-gray-300 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm">
-                <span>📥</span> Exporter
+                <span>📥</span> Exporter PDF
             </a>
         </div>
     </div>
@@ -27,8 +27,8 @@
             <div class="relative z-10">
                 <p class="text-indigo-100 text-sm font-medium uppercase tracking-wider">Solde disponible</p>
                 <h3 class="text-4xl font-black mt-2">{{ total_solde|default:"0" }} <span class="text-lg font-normal">FCFA</span></h3>
-                <button onclick="openModal('modal-transfert')" class="inline-flex items-center mt-6 text-sm text-indigo-100 hover:text-white transition group">
-                    Gérer mes comptes <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                <button  class="inline-flex items-center mt-6 text-sm text-indigo-100 hover:text-white transition group">
+                <a href="{% url 'compte_list' %}">  Gérer mes comptes <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span></a>
                 </button>
             </div>
             <div class="absolute -right-6 -bottom-6 opacity-15 rotate-12">
@@ -93,7 +93,7 @@
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
             <h3 class="font-bold text-gray-800 text-lg">Historique des transactions</h3>
-            <a href="#" class="text-indigo-600 text-sm font-bold hover:text-indigo-800 transition">Voir tout l'historique</a>
+            <a href="{% url 'transaction' %}" class="text-indigo-600 text-sm font-bold hover:text-indigo-800 transition">Voir tout l'historique</a>
         </div>
         <div class="overflow-x-auto">
             

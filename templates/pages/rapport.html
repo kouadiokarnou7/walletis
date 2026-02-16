@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+{% block title %} Walletis - Rapports {% endblock %}
+
+{% block content %}
+<!-- Importation de Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .card-stat { background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem; }
+    .text-green { color: #10b981; }
+    .text-red { color: #ef4444; }
+    .chart-container { position: relative; height: 300px; width: 100%; }
+    .btn-export { background-color: #4f46e5; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
+    .btn-export:hover { background-color: #4338ca; }
+</style>
+
+<div class="container mx-auto py-8 max-w-6xl">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Tableau de Bord</h1>
+        <a href="{#export_tran}" class="btn-export">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Exporter PDF
+        </a>
+    </div>
+
+    <!-- Cartes Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card-stat">
+            <p class="text-gray-500 text-sm">Revenus Totaux</p>
+            <p class="stat-value text-green">+{{ total_revenu|floatformat:2 }} FCFA</p>
+        </div>
+        <div class="card-stat">
+            <p class="text-gray-500 text-sm">Dépenses Totales</p>
+            <p class="stat-value text-red">−{{ total_depense|floatformat:2 }} FCFA</p>
+        </div>
+        <div class="card-stat">
+            <p class="text-gray-500 text-sm">Solde Net</p>
+            <p class="stat-value text-gray-800">{{ solde_net|floatformat:2 }} FCFA</p>
+        </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Graphique Catégories -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold text-gray-700 mb-4">Répartition des Dépenses par Compte</h3>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Graphique Évolution -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold text-gray-700 mb-4">Évolution Mensuelle</h3>
+            <div class="chart-container">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-8 text-center">
+        <a href="{% url 'transaction' %}" class="text-indigo-600 hover:underline">← Retour aux transactions</a>
+    </div>
+</div>
+
+{{ labels_categories|json_script:"labels-categories" }}
+{{ data_categories|json_script:"data-categories" }}
+{{ labels_months|json_script:"labels-months" }}
+{{ data_income|json_script:"data-income" }}
+{{ data_expense|json_script:"data-expense" }}
+<script>
+    const catLabels = JSON.parse(document.getElementById('labels-categories').textContent);
+    const catData = JSON.parse(document.getElementById('data-categories').textContent);
+    const monthLabels = JSON.parse(document.getElementById('labels-months').textContent);
+    const incomeData = JSON.parse(document.getElementById('data-income').textContent);
+    const expenseData = JSON.parse(document.getElementById('data-expense').textContent);
+
+    // 1. Graphique Camembert (Dépenses par compte)
+    const ctxCat = document.getElementById('categoryChart').getContext('2d');
+    new Chart(ctxCat, {
+        type: 'doughnut',
+        data: {
+            labels: catLabels,
+            datasets: [{
+                data: catData,
+                backgroundColor: [
+                    '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#6366f1', '#8b5cf6'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // 2. Graphique Barres (Mensuel)
+    const ctxMonth = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(ctxMonth, {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: 'Revenus',
+                    data: incomeData,
+                    backgroundColor: '#10b981',
+                },
+                {
+                    label: 'Dépenses',
+                    data: expenseData,
+                    backgroundColor: '#ef4444',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}
