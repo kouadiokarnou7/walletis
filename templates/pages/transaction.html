@@ -3,100 +3,122 @@
 
 {% block content %}
 <style>
-    .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #f3f4f6; }
+    .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid #f3f4f6; transition: background 0.2s; }
+    .transaction-item:hover { background-color: #f9fafb; }
     .transaction-item:last-child { border-bottom: none; }
+    /* Entrée = vert, Dépense = rouge */
     .amount-credit { color: #10b981; font-weight: 600; }
     .amount-debit { color: #ef4444; font-weight: 600; }
-    .btn-back { display: inline-flex; align-items: center; padding: 0.5rem 1rem; border: 1px solid #d1d5db; background: white; border-radius: 0.375rem; text-decoration: none; color: #374151; margin-bottom: 1rem; cursor: pointer;}
+    .search-container { margin-bottom: 1.5rem; position: relative; }
+    .search-input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; outline: none; }
+.search-input:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); }
+    .no-result { text-align: center; color: #6b7280; padding: 2rem; display: none; }
 </style>
 
 <div class="container mx-auto py-8 max-w-4xl">
     <!-- En-tête avec retour -->
     <div class="mb-6">
-        <a href="/comptes" class="btn-back">← Retour aux comptes</a>
+        <a href="{% url 'compte_list' %}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
+            ← Retour aux comptes
+        </a>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
+        <!-- Informations du compte -->
         <div class="flex justify-between items-end mb-6 border-b pb-4">
             <div>
-                <p class="text-gray-500 text-sm">Historique pour</p>
-                <h1 id="accountNameDisplay" class="text-2xl font-bold text-gray-800">Chargement...</h1>
+                <p class="text-gray-500 text-sm uppercase tracking-wide">Historique pour</p>
+                <h1 class="text-2xl font-bold text-gray-800">
+                    {% if compte_actif %}{{ compte_actif.nom_compte }}{% else %}Tous les comptes{% endif %}
+                </h1>
             </div>
             <div class="text-right">
-                <p class="text-gray-500 text-sm">Solde actuel</p>
-                <p id="accountBalanceDisplay" class="text-xl font-bold text-gray-900">...</p>
+                <p class="text-gray-500 text-sm uppercase tracking-wide">Solde actuel</p>
+                <p class="text-2xl font-bold text-gray-900">
+                    {{ solde|floatformat:2 }} FCFA
+                </p>
             </div>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Rechercher une transaction (ex: Netflix, Salaire...)">
         </div>
 
         <!-- Liste des transactions -->
         <div id="transactionsList">
-            <!-- Injecté par JS -->
+            <!-- Rempli par JS -->
+        </div>
+        
+        <!-- Message si aucune transaction -->
+        <div id="noResultMessage" class="no-result">
+            Aucune transaction trouvée pour cette recherche.
         </div>
     </div>
 </div>
 
+{{ transactions_json|json_script:"transactions-data" }}
 <script>
-    // --- Simulation Backend Transactions ---
-    const allTransactions = [
-        { id: 1, accountId: 1, desc: "Achat Supermarché", amount: -45.50, date: "2023-10-25" },
-        { id: 2, accountId: 1, desc: "Salaire Octobre", amount: 2400.00, date: "2023-10-24" },
-        { id: 3, accountId: 1, desc: "Abonnement Netflix", amount: -15.99, date: "2023-10-20" },
-        { id: 4, accountId: 2, desc: "Virement Epargne", amount: 200.00, date: "2023-10-18" },
-    ];
-
-    // Récupérer l'ID depuis l'URL (ex: ?id=1)
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentAccountId = parseInt(urlParams.get('id'));
-
-    // Données comptes (reprise pour l'exemple)
-    const accountsDB = [
-        { id: 1, name: "Compte Courant", balance: 1250.50 },
-        { id: 2, name: "Livret A", balance: 5000.00 }
-    ];
-
-    function initTransactions() {
-        const account = accountsDB.find(a => a.id === currentAccountId);
-        
-        if(!account) {
-            document.getElementById('accountNameDisplay').innerText = "Compte introuvable";
-            return;
-        }
-
-        // Afficher infos compte
-        document.getElementById('accountNameDisplay').innerText = account.name;
-        document.getElementById('accountBalanceDisplay').innerText = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(account.balance);
-
-        // Filtrer et afficher transactions
-        const list = document.getElementById('transactionsList');
-        list.innerHTML = "";
-        
-        const accTransactions = allTransactions.filter(t => t.accountId === currentAccountId);
-
-        if(accTransactions.length === 0) {
-            list.innerHTML = "<p class='text-center text-gray-400 py-4'>Aucune transaction récente.</p>";
-        } else {
-            accTransactions.forEach(t => {
-                const isCredit = t.amount >= 0;
-                const sign = isCredit ? '+' : '';
-                const colorClass = isCredit ? 'amount-credit' : 'amount-debit';
-                
-                const row = document.createElement('div');
-                row.className = 'transaction-item';
-                row.innerHTML = `
-                    <div>
-                        <div class="font-medium text-gray-800">${t.desc}</div>
-                        <div class="text-xs text-gray-500">${t.date}</div>
-                    </div>
-                    <div class="${colorClass}">
-                        ${sign}${t.amount.toFixed(2)} €
-                    </div>
-                `;
-                list.appendChild(row);
-            });
-        }
+    // 1. Récupération des données Django (sécurisé)
+    const transactionsData = JSON.parse(document.getElementById('transactions-data').textContent);
+    
+    // 2. Fonction pour formater la date (Optionnel, pour faire joli)
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('fr-FR', options);
     }
 
-    // Lancer au chargement
-    initTransactions();
+    // 3. Fonction principale d'affichage
+    function renderTransactions(filterText = '') {
+        const listContainer = document.getElementById('transactionsList');
+        const noResultMsg = document.getElementById('noResultMessage');
+        listContainer.innerHTML = '';
+        
+        // Filtrage
+        const filtered = transactionsData.filter(t => {
+            const desc = (t.description || '').toLowerCase();
+            return desc.includes(filterText.toLowerCase());
+        });
+
+        // Gestion "Aucun résultat"
+        if (filtered.length === 0) {
+            noResultMsg.style.display = 'block';
+            return;
+        } else {
+            noResultMsg.style.display = 'none';
+        }
+
+        // Création des éléments HTML (Entrée = vert, Dépense = rouge)
+        filtered.forEach(t => {
+            const isEntree = (t.type || '').toUpperCase() === 'REVENU';
+            const colorClass = isEntree ? 'amount-credit' : 'amount-debit';
+            const sign = isEntree ? '+' : '−';
+            const montant = parseFloat(t.montant);
+            
+            const row = document.createElement('div');
+            row.className = 'transaction-item';
+            row.innerHTML = `
+                <div>
+                    <div class="font-medium text-gray-800">${t.description || 'Transaction sans nom'}</div>
+                    <div class="text-xs text-gray-500">${formatDate(t.date)} · ${isEntree ? 'Entrée' : 'Dépense'}</div>
+                </div>
+                <div class="${colorClass}">
+                    ${sign} ${montant.toFixed(2)} FCFA
+                </div>
+            `;
+            listContainer.appendChild(row);
+        });
+    }
+
+    // 4. Écouteur pour la barre de recherche
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        renderTransactions(e.target.value);
+    });
+
+    // 5. Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTransactions();
+    });
 </script>
 {% endblock %}
