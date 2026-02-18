@@ -11,6 +11,20 @@ from django.db.models.functions import TruncMonth
 from django.db import IntegrityError
 import random
 from decimal import Decimal
+#
+# PDF
+from django.http import HttpResponse
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+import io
+from datetime import datetime
+
+#
 
 
 from django.core.mail import send_mail
@@ -398,5 +412,131 @@ def report_page(request):
         'total_depense': total_depense,
         'solde_net': solde_net,
         'transactions': transactions,
+        'comptes':comptes,
     }
     return render(request, 'pages/rapport.html', context)
+
+
+# fonction de téléchargement 
+@login_required
+def export_pdf(request):
+    if request.method == "POST":
+
+        selected_comptes = request.POST.getlist("comptes")
+
+        # Sécurité multi-tenant
+        if "all" in selected_comptes:
+            comptes = Compte.objects.filter(compte_user=request.user)
+        else:
+            comptes = Compte.objects.filter(
+                id__in=selected_comptes,
+                compte_user=request.user
+            )
+
+        transactions = Transaction.objects.filter(
+            compte__in=comptes
+        ).order_by("-date")
+
+        # Création buffer mémoire
+        buffer = io.BytesIO()
+
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4
+        )
+
+        elements = []
+        styles = getSampleStyleSheet()
+
+        # ---- Titre ----
+        elements.append(Paragraph("WALLETIS - RAPPORT FINANCIER", styles['Title']))
+        elements.append(Spacer(1, 0.3 * inch))
+
+        elements.append(
+            Paragraph(
+                f"Utilisateur : {request.user.nom_complet}",
+                styles['Normal']
+            )
+        )
+
+        elements.append(
+            Paragraph(
+                f"Généré le : {datetime.now().strftime('%d/%m/%Y')}",
+                styles['Normal']
+            )
+        )
+
+        elements.append(Spacer(1, 0.3 * inch))
+
+        # ---- Tableau ----
+        data = [["Date", "Compte", "Description", "Type", "Montant (FCFA)"]]
+
+        total_revenu = Decimal("0")
+        total_depense = Decimal("0")
+
+        for t in transactions:
+
+            if t.type == "REVENU":
+                total_revenu += t.montant
+            else:
+                total_depense += t.montant
+
+            data.append([
+                t.date.strftime("%d/%m/%Y"),
+                t.compte.nom_compte,
+                t.description or "",
+                t.type,
+                f"{t.montant:.2f}"
+            ])
+
+        table = Table(data, repeatRows=1)
+
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4F46E5")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
+        ]))
+
+        elements.append(table)
+        elements.append(Spacer(1, 0.4 * inch))
+
+        # ---- Résumé financier ----
+        solde_net = total_revenu - total_depense
+
+        elements.append(Paragraph("RÉSUMÉ FINANCIER", styles['Heading2']))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        summary_data = [
+            ["Total Revenus", f"{total_revenu:.2f} FCFA"],
+            ["Total Dépenses", f"{total_depense:.2f} FCFA"],
+            ["Solde Net", f"{solde_net:.2f} FCFA"],
+        ]
+
+        summary_table = Table(summary_data, colWidths=[250, 150])
+        summary_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.whitesmoke),
+            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ]))
+
+        elements.append(summary_table)
+
+        # Construction PDF
+        doc.build(elements)
+
+        buffer.seek(0)
+
+        response = HttpResponse(
+            buffer,
+            content_type='application/pdf'
+        )
+
+        response['Content-Disposition'] = (
+            f'attachment; filename="walletis_rapport_{datetime.now().strftime("%Y%m%d")}.pdf"'
+        )
+
+        return response
+
+    return redirect("dashboard")
+    

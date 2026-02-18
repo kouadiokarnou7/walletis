@@ -18,6 +18,8 @@ urlpatterns = [
     path('transaction/',views.transaction_page,name='transaction'),
     path('logout/',views.logout,name='logout'),
     path('rapport/', views.report_page, name='report_page'),
+    path("export-pdf/", views.export_pdf, name="export_pdf"),
+
     #path('export/', views.export_transactions, name='export_transactions'),
   
 ]
