@@ -58,7 +58,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'database-1',
+        'NAME': 'walletis',
         'USER': 'postgres',
         'PASSWORD': 'david123456',
         'HOST': 'database-1.che2a2euivri.eu-west-3.rds.amazonaws.com',
